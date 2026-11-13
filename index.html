@@ -126,6 +126,42 @@ ul, ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(520px, calc(100% - 32px)); display: flex; align-items: center; gap: 12px; background: var(--fg); color: var(--bg); padding: 12px 12px 12px 16px; border-radius: 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .25); font-weight: 600; }
 .toast span { flex: 1; min-width: 0; }
 .toast button { font: 800 1rem var(--display); border: 0; border-radius: 10px; background: var(--mango); color: #2a1f3d; padding: 8px 16px; cursor: pointer; }
+h1 { font-size: 1.8rem; }
+.iconbtn { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--fg); font: 800 1.15rem var(--display); display: grid; place-items: center; cursor: pointer; }
+.iconbtn.on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.iconbtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pagehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.pagehead h2 { font: 800 1.5rem var(--display); margin: 0; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.tile { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 2px; min-width: 0; }
+.tile span { font: 800 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.tile b { font: 800 1.6rem var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile:first-child b { color: var(--tomato); }
+.months li { display: grid; grid-template-columns: 2.4em 1fr 5.5em; align-items: center; gap: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.months li > :last-child { text-align: right; }
+.months .track { height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.months .track i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--mango), var(--tomato)); }
+.months .zero { color: var(--muted); font-weight: 600; }
+.money { font: 800 1.05rem var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.when { flex: none; width: 3.4em; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note { background: var(--mango); color: #2a1f3d; border-radius: 14px; padding: 12px 14px; font-weight: 600; margin-top: 12px; }
+.sheet { position: fixed; inset: 0; z-index: 25; background: rgb(0 0 0 / 0.45); display: flex; align-items: flex-end; justify-content: center; }
+.sheetcard { width: min(560px, 100%); max-height: 92%; overflow-y: auto; background: var(--bg); border-radius: 24px 24px 0 0; padding: 20px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.sheetcard h2 { font: 800 1.6rem var(--display); margin: 0; }
+.sheetcard .hint { margin: 0; }
+.datefield { display: grid; gap: 4px; font: 800 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.datefield input { font: 600 1rem var(--body); padding: 10px 12px; }
+.rrow { display: flex; align-items: center; gap: 8px; }
+.rrow select { flex: 1 1 0; min-width: 0; padding-block: 12px; }
+.rrow .dollar { font: 800 1.2rem var(--display); color: var(--muted); }
+.rrow .rAmt { flex: 0 0 104px; min-width: 0; padding: 11px 12px; font: 700 1.1rem var(--body); text-align: right; }
+.rmsg { color: var(--tomato); font-weight: 700; margin: 0; }
+.rmsg:empty { display: none; }
+.sheetcard .confirm { display: flex; gap: 8px; }
+.sheetcard .confirm button { flex: 1; font: 800 1.05rem var(--display); padding: 14px 8px; border: 0; border-radius: 16px; cursor: pointer; }
+.sheetcard .confirm .done { background: var(--lime); color: #fff; }
+.sheetcard .confirm .no { background: var(--card); color: var(--fg); border: 2px solid var(--line); }
+.linkbtn { justify-self: center; background: none; border: 0; color: var(--muted); font: 700 0.95rem var(--body); text-decoration: underline; cursor: pointer; padding: 6px; }
 .gate { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
 .gatecard { width: min(360px, 100%); display: grid; gap: 12px; text-align: center; }
 .gatecard h2 { font: 800 2.4rem var(--display); margin: 0; }
@@ -145,7 +181,8 @@ ul, ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
     <div class="brand">
       <h1>Basket<span>Run</span></h1>
       <span class="sync" id="sync">Loading…</span>
-      <button class="pill" id="setupBtn">Setup</button>
+      <button class="iconbtn" id="spendBtn" aria-label="Spending" title="Spending">$</button>
+      <button class="iconbtn" id="setupBtn" aria-label="Setup" title="Setup"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
     <div class="tabs" role="tablist">
       <button id="tab-list" role="tab" aria-selected="true">My List</button>
@@ -203,9 +240,36 @@ ul, ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
     </div>
     <button class="pill on" id="setupDone" style="margin-top:14px">Back to my list</button>
   </section>
+
+  <section id="view-spend" hidden>
+    <div class="pagehead"><h2>Spending</h2><button class="pill" id="addReceipt">+ Add a receipt</button></div>
+    <div class="note" id="spendNote" hidden>The Google script needs its update before spending can be saved.</div>
+    <div class="tiles">
+      <div class="tile"><span id="monthLabel">This month</span><b id="monthTotal">$0.00</b></div>
+      <div class="tile"><span id="yearLabel">This year</span><b id="yearTotal">$0.00</b></div>
+    </div>
+    <div class="filters" id="yearChips"></div>
+    <div class="card"><h2 id="monthsTitle">By month</h2><ol class="months" id="monthBars"></ol></div>
+    <div class="card"><h2>By store</h2><ul class="stores" id="storeTotals"></ul></div>
+    <div class="card"><h2>Receipts</h2><ul class="stores" id="tripList"></ul></div>
+    <p class="hint">Everything here is also in the Trips and Spending tabs of your Grocery List sheet. To export, open the sheet and use File &gt; Download.</p>
+    <button class="pill on" id="spendDone" style="margin-top:6px">Back to my list</button>
+  </section>
 </div>
 <div class="dock" id="dock" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="sheet" id="receipt" hidden>
+  <form class="sheetcard" id="receiptForm" autocomplete="off" role="dialog" aria-labelledby="rTitle">
+    <h2 id="rTitle">What did you spend?</h2>
+    <p class="hint">One line per store. Leave a line empty to skip it.</p>
+    <label class="datefield">Date<input type="date" id="rDate"></label>
+    <div id="rRows" style="display:grid;gap:8px"></div>
+    <button type="button" class="pill" id="rAdd" style="justify-self:start">+ Another store</button>
+    <p class="rmsg" id="rMsg"></p>
+    <div class="confirm"><button type="button" class="no" id="rCancel">Keep shopping</button><button type="submit" class="done" id="rSave">Save &amp; finish</button></div>
+    <button type="button" class="linkbtn" id="rSkip">Finish without amounts</button>
+  </form>
+</div>
 <div class="gate" id="gate" hidden>
   <form class="gatecard" id="gateForm" autocomplete="off">
     <h2>Basket<span>Run</span></h2>
@@ -266,6 +330,7 @@ let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
 const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
+let trips = [], serverVersion = 0, spendYear = null, receiptMode = "finish";   // trips: {id, date "YYYY-MM-DD", store, amount, items}
 try { pass = localStorage.getItem("basket-pass") || ""; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -289,8 +354,8 @@ const aisleOptions = cur => aisleOrder().map(a => `<option value="${a.id}"${a.id
 const toServer = i => ({ id: i.id, name: i.name, section: aisleOf(i.aisle).label, store: i.store || "", need: !!i.need, got: !!i.got });
 const fromServer = r => ({ id: r.id, name: r.name, store: r.store || "", need: !!r.need, got: !!r.got,
   aisle: (AISLES.find(a => a.label.toLowerCase() === String(r.section).trim().toLowerCase()) || aisleOf("other")).id });
-function saveLocal() { try { localStorage.setItem("basket-items", JSON.stringify(items)); localStorage.setItem("basket-settings", JSON.stringify(settings)); } catch (e) {} }
-function loadLocal() { try { items = JSON.parse(localStorage.getItem("basket-items") || "[]"); settings = JSON.parse(localStorage.getItem("basket-settings") || "null"); } catch (e) {} }
+function saveLocal() { try { localStorage.setItem("basket-items", JSON.stringify(items)); localStorage.setItem("basket-settings", JSON.stringify(settings)); localStorage.setItem("basket-trips", JSON.stringify(trips)); } catch (e) {} }
+function loadLocal() { try { items = JSON.parse(localStorage.getItem("basket-items") || "[]"); settings = JSON.parse(localStorage.getItem("basket-settings") || "null"); trips = JSON.parse(localStorage.getItem("basket-trips") || "[]"); } catch (e) {} }
 async function call(ops) {
   if (!API.startsWith("https://")) { setSync("Not connected yet"); throw new Error("no api"); }
   const res = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ key: pass, ops }) });
@@ -299,9 +364,11 @@ async function call(ops) {
 function apply(data) {
   if (data.error === "passcode") { askPass("That passcode didn't work. Try again."); return; }
   if (data.error) { setSync("Sheet problem"); return; }
+  serverVersion = data.version || 1;
   if (!queue.length) {
     items = (data.items || []).map(fromServer);
     if (data.settings) settings = data.settings;
+    if (Array.isArray(data.trips)) trips = data.trips;
     saveLocal(); render();
   }
   setSync("Synced");
@@ -440,6 +507,9 @@ function render() {
   $("view-list").hidden = view !== "list";
   $("view-shop").hidden = view !== "shop";
   $("view-setup").hidden = view !== "setup";
+  $("view-spend").hidden = view !== "spend";
+  $("spendBtn").classList.toggle("on", view === "spend");
+  if (view === "spend") renderSpend();
   $("tab-list").setAttribute("aria-selected", view === "list");
   $("tab-shop").setAttribute("aria-selected", view === "shop");
   $("setupBtn").classList.toggle("on", view === "setup");
@@ -448,9 +518,7 @@ function render() {
   if (view === "shop" && trip.length) {
     dock.hidden = false;
     const all = got === trip.length;
-    dock.innerHTML = confirming
-      ? `<div class="confirm"><button class="no" id="cancelDone">Keep shopping</button><button class="done" id="yesDone">Clear what's in the cart</button></div>`
-      : `<button id="finish" class="${all ? "done" : ""}">${all ? "All done! Finish trip" : "Finish trip"}</button>`;
+    dock.innerHTML = `<button id="finish" class="${all ? "done" : ""}">${all ? "All done! Finish trip" : "Finish trip"}</button>`;
   } else dock.hidden = true;
 }
 
@@ -459,6 +527,8 @@ const go = v => { view = v; confirming = false; clearing = false; render(); scro
 $("tab-list").onclick = () => go("list");
 $("tab-shop").onclick = () => go("shop");
 $("setupBtn").onclick = () => go(view === "setup" ? "list" : "setup");
+$("spendBtn").onclick = () => go(view === "spend" ? "list" : "spend");
+$("spendDone").onclick = () => go("list");
 $("setupDone").onclick = () => go("list");
 $("editBtn").onclick = () => { editing = !editing; clearing = false; render(); };
 
@@ -537,13 +607,105 @@ $("storeMgr").addEventListener("click", e => {
 });
 
 $("dock").addEventListener("click", e => {
-  if (e.target.id === "finish") { confirming = true; render(); }
-  else if (e.target.id === "cancelDone") { confirming = false; render(); }
-  else if (e.target.id === "yesDone") {
-    confirming = false;
-    items.filter(i => i.need && i.got).forEach(i => write(i, { need: false, got: false }));
-    go("list");
-  }
+  if (e.target.id === "finish") openReceipt("finish");
+});
+
+/* ---------- spending ---------- */
+const money = n => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
+const pad = n => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const sum = list => list.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+const needsUpdate = () => serverVersion > 0 && serverVersion < 2;
+
+function receiptRow(store) {
+  return `<div class="rrow"><select class="rStore" aria-label="Store">${storeOptions(store, "Pick a store")}</select>
+    <span class="dollar">$</span><input class="rAmt" inputmode="decimal" placeholder="0.00" aria-label="Amount spent">
+    <button type="button" class="del rDel" aria-label="Remove this line">×</button></div>`;
+}
+function openReceipt(mode) {
+  receiptMode = mode;
+  let stores = [];
+  if (mode === "finish") stores = [...new Set(items.filter(i => i.need && i.got).map(i => i.store || ""))].sort((a, b) => (a === "") - (b === "") || a.localeCompare(b));
+  if (!stores.length) stores = [storeFilter !== "all" ? storeFilter : ""];
+  $("rDate").value = today();
+  $("rRows").innerHTML = stores.map(receiptRow).join("");
+  $("rTitle").textContent = mode === "finish" ? "What did you spend?" : "Add a receipt";
+  $("rSave").textContent = mode === "finish" ? "Save & finish" : "Save";
+  $("rCancel").textContent = mode === "finish" ? "Keep shopping" : "Cancel";
+  $("rSkip").hidden = mode !== "finish";
+  $("rMsg").textContent = needsUpdate() ? "Spending can't be saved until the Google script is updated." : "";
+  $("receipt").hidden = false;
+  $("rRows").querySelector(".rAmt")?.focus();
+}
+function clearCart() { items.filter(i => i.need && i.got).forEach(i => write(i, { need: false, got: false })); }
+$("rAdd").onclick = () => { $("rRows").insertAdjacentHTML("beforeend", receiptRow("")); [...$("rRows").querySelectorAll(".rStore")].pop().focus(); };
+$("rRows").addEventListener("click", e => { const b = e.target.closest(".rDel"); if (b && $("rRows").children.length > 1) b.closest(".rrow").remove(); });
+$("rCancel").onclick = () => { $("receipt").hidden = true; };
+$("rSkip").onclick = () => { $("receipt").hidden = true; clearCart(); go("list"); toast("Trip finished."); };
+$("receiptForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if (needsUpdate()) { $("rMsg").textContent = "Spending can't be saved until the Google script is updated." + (receiptMode === "finish" ? " Tap Finish without amounts for now." : ""); return; }
+  const lines = [...$("rRows").querySelectorAll(".rrow")].map(r => ({
+    store: r.querySelector(".rStore").value,
+    amount: parseFloat(r.querySelector(".rAmt").value.replace(/[$,\s]/g, "")),
+  })).filter(l => l.amount > 0);
+  if (!lines.length) { $("rMsg").textContent = receiptMode === "finish" ? "Enter an amount, or tap Finish without amounts." : "Enter an amount."; return; }
+  if (lines.some(l => !l.store)) { $("rMsg").textContent = "Pick a store for each amount."; return; }
+  const date = $("rDate").value || today();
+  const inCart = items.filter(i => i.need && i.got);
+  const added = lines.map(l => ({
+    id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, store: l.store,
+    amount: Math.round(l.amount * 100) / 100,
+    items: receiptMode === "finish" ? inCart.filter(i => i.store === l.store).length : 0,
+  }));
+  trips.push(...added);
+  send({ op: "trip", trips: added });
+  $("receipt").hidden = true;
+  const msg = `Saved ${money(sum(added))}.`;
+  if (receiptMode === "finish") { clearCart(); go("list"); toast(msg + " Trip finished."); }
+  else { render(); toast(msg); }
+});
+
+function renderSpend() {
+  const now = today(), nowY = now.slice(0, 4), nowM = now.slice(0, 7);
+  const years = [...new Set([nowY, ...trips.map(t => t.date.slice(0, 4))])].sort().reverse();
+  if (!years.includes(spendYear)) spendYear = nowY;
+  const inYear = trips.filter(t => t.date.startsWith(spendYear));
+  $("spendNote").hidden = !needsUpdate();
+  $("monthLabel").textContent = MONTHS[Number(now.slice(5, 7)) - 1] + " " + nowY;
+  $("monthTotal").textContent = money(sum(trips.filter(t => t.date.startsWith(nowM))));
+  $("yearLabel").textContent = spendYear === nowY ? "This year" : spendYear;
+  $("yearTotal").textContent = money(sum(inYear));
+  $("yearChips").hidden = years.length < 2;
+  $("yearChips").innerHTML = years.map(y => `<button class="pill" data-year="${y}" aria-pressed="${y === spendYear}">${y}</button>`).join("");
+
+  $("monthsTitle").textContent = `By month, ${spendYear}`;
+  const totals = MONTHS.map((m, i) => sum(inYear.filter(t => Number(t.date.slice(5, 7)) === i + 1)));
+  const lastMonth = spendYear === nowY ? Number(now.slice(5, 7)) : 12;
+  const max = Math.max(...totals, 1);
+  $("monthBars").innerHTML = totals.slice(0, lastMonth).map((v, i) => `<li><span>${MONTHS[i]}</span>
+    <span class="track"><i style="width:${(v / max * 100).toFixed(1)}%"></i></span><span class="${v ? "" : "zero"}">${v ? money(v) : "—"}</span></li>`).reverse().join("");
+
+  const byStore = {};
+  inYear.forEach(t => { (byStore[t.store] ||= []).push(t); });
+  $("storeTotals").innerHTML = Object.entries(byStore).sort((a, b) => sum(b[1]) - sum(a[1])).map(([s, list]) =>
+    `<li><span class="tag" style="--t:${tagColor(s)}">${esc(s)}</span><span class="hint" style="margin:0">${list.length} receipt${list.length === 1 ? "" : "s"}</span><span class="money">${money(sum(list))}</span></li>`).join("")
+    || `<li><span class="lbl">No receipts yet. Finish a trip to add one.</span></li>`;
+
+  $("tripList").innerHTML = [...inYear].sort((a, b) => b.date.localeCompare(a.date)).map(t =>
+    `<li><span class="when">${MONTHS[Number(t.date.slice(5, 7)) - 1]} ${Number(t.date.slice(8, 10))}</span><span class="tag" style="--t:${tagColor(t.store)}">${esc(t.store)}</span>
+    <span class="money">${money(t.amount)}</span><button class="del" data-deltrip="${esc(t.id)}" aria-label="Delete this receipt">×</button></li>`).join("")
+    || `<li><span class="lbl">No receipts for ${spendYear}.</span></li>`;
+}
+$("addReceipt").onclick = () => openReceipt("manual");
+$("yearChips").onclick = e => { const b = e.target.closest("[data-year]"); if (b) { spendYear = b.dataset.year; render(); } };
+$("tripList").addEventListener("click", e => {
+  const b = e.target.closest("[data-deltrip]"); if (!b) return;
+  const t = trips.find(x => x.id === b.dataset.deltrip); if (!t) return;
+  trips = trips.filter(x => x !== t); render();
+  send({ op: "deltrip", id: t.id });
+  toast(`Deleted ${money(t.amount)} at ${t.store}.`, () => { trips.push(t); render(); send({ op: "trip", trips: [t] }); });
 });
 
 /* ---------- confetti ---------- */
