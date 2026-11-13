@@ -79,6 +79,14 @@ ul, ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .row.on .box svg { opacity: 1; transform: scale(1); }
 .name { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .row.got .name { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted); }
+/* Checked off in the store: a thin, faded row that stays in place */
+.row { transition: transform .12s, border-color .12s, padding .2s, opacity .2s; }
+.row.got { padding-block: 3px; opacity: 0.55; border-style: dashed; }
+.row.got .name { font-size: 0.85rem; font-weight: 600; }
+.row.got .box { width: 20px; height: 20px; border-radius: 6px; border-width: 2px; }
+.row.got .box svg { width: 12px; height: 12px; }
+.row.got .tag { font-size: 0.6rem; padding: 0 6px; border-width: 1.5px; }
+@media (prefers-reduced-motion: reduce) { .row { transition: none; } }
 .tag { flex: none; font: 700 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--t); border: 2px solid var(--t); border-radius: 999px; padding: 2px 8px; }
 .pick { flex: 1 1 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pick label { display: grid; gap: 3px; font: 700 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
