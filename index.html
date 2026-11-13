@@ -264,7 +264,7 @@ function guessAisle(name) {
 let items = [];          // {id, name, aisle, store, need, got, at}
 let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
-const API = "__API_URL__";   // Google Apps Script web app link
+const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
 try { pass = localStorage.getItem("basket-pass") || ""; } catch (e) {}
 const $ = id => document.getElementById(id);
