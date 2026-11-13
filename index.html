@@ -130,7 +130,7 @@ h1 { font-size: 1.8rem; }
 .iconbtn { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--fg); font: 800 1.15rem var(--display); display: grid; place-items: center; cursor: pointer; }
 .iconbtn.on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .iconbtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pagehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.pagehead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
 .pagehead h2 { font: 800 1.5rem var(--display); margin: 0; }
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .tile { background: var(--card); border: 2px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 2px; min-width: 0; }
@@ -242,7 +242,7 @@ h1 { font-size: 1.8rem; }
   </section>
 
   <section id="view-spend" hidden>
-    <div class="pagehead"><h2>Spending</h2><button class="pill" id="addReceipt">+ Add a receipt</button></div>
+    <div class="pagehead"><h2>Spending</h2><button class="pill" id="addReceipt">+ Add a receipt total amount</button></div>
     <div class="note" id="spendNote" hidden>The Google script needs its update before spending can be saved.</div>
     <div class="tiles">
       <div class="tile"><span id="monthLabel">This month</span><b id="monthTotal">$0.00</b></div>
@@ -630,7 +630,7 @@ function openReceipt(mode) {
   if (!stores.length) stores = [storeFilter !== "all" ? storeFilter : ""];
   $("rDate").value = today();
   $("rRows").innerHTML = stores.map(receiptRow).join("");
-  $("rTitle").textContent = mode === "finish" ? "What did you spend?" : "Add a receipt";
+  $("rTitle").textContent = mode === "finish" ? "What did you spend?" : "Add a receipt total amount";
   $("rSave").textContent = mode === "finish" ? "Save & finish" : "Save";
   $("rCancel").textContent = mode === "finish" ? "Keep shopping" : "Cancel";
   $("rSkip").hidden = mode !== "finish";
