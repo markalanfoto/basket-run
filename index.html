@@ -48,7 +48,7 @@ h1 span { color: var(--tomato); }
 .tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
 .count { font-size: 0.8rem; background: var(--tomato); color: #fff; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
 
-form.add { display: grid; gap: 8px; }
+form.add { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .addrow { display: flex; gap: 8px; }
 .addrow > * { min-width: 0; }
 form input { flex: 1; font: 600 1rem var(--body); padding: 13px 16px; border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--fg); }
@@ -395,8 +395,8 @@ function render() {
   $("shopCount").textContent = fullTrip.length;
 
   // My List
-  keepValue($("addAisle"), `<option value="">Section: pick for me</option>` + aisleOptions(""));
-  keepValue($("addStore"), storeOptions("", "Where to buy: Anywhere"));
+  keepValue($("addAisle"), `<option value="">Section: auto</option>` + aisleOptions(""));
+  keepValue($("addStore"), storeOptions("", "Store: any"));
   $("listHint").innerHTML = editing ? "Change an item's section or store, or remove it." : "Tick what you need this trip. It moves to <b>In the Store</b>.";
   $("editBtn").textContent = editing ? "Done editing" : "Edit items";
   $("editBtn").classList.toggle("on", editing);
