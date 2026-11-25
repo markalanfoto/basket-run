@@ -367,6 +367,7 @@ let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
 const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
+const BUILD = "2026-11-25b";   // change on every update so open phones notice it
 let query = "";        // what's typed in the Find or add box
 let renaming = null;   // id of the section being renamed in Setup
 let trips = [], serverVersion = 0, spendYear = null, receiptMode = "finish";   // trips: {id, date "YYYY-MM-DD", store, amount, items}
@@ -881,6 +882,20 @@ loadLocal(); render();
 if (!pass) askPass("Enter your household passcode."); else { setSync("Loading…"); refresh(); }
 setInterval(refresh, 15000);
 document.addEventListener("visibilitychange", refresh);
+
+// GitHub lets phones keep a saved copy of the app for up to 10 minutes.
+// Ask for the latest page directly, and switch to it when it's newer (never with unsaved changes waiting).
+async function checkForUpdate() {
+  if (document.hidden || queue.length || inflight) return;
+  try {
+    const html = await (await fetch("./?check=" + Date.now(), { cache: "no-store" })).text();
+    const live = (html.match(/const BUILD = "([^"]+)"/) || [])[1];
+    if (live && live !== BUILD && !queue.length && !inflight) location.replace("./?v=" + encodeURIComponent(live));
+  } catch (e) {}
+}
+checkForUpdate();
+document.addEventListener("visibilitychange", checkForUpdate);
+setInterval(checkForUpdate, 5 * 60 * 1000);
 </script>
 </body>
 </html>
