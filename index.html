@@ -34,7 +34,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 button, select, input { font-family: var(--body); }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--berry); outline-offset: 2px; }
 
-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px 10px; display: grid; gap: 10px; }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.jump { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.jump::-webkit-scrollbar { display: none; }
+.jumpchip { flex: none; display: flex; align-items: center; gap: 6px; font: 700 0.8rem var(--body); padding: 6px 11px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.jumpchip::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
+.group { scroll-margin-top: calc(var(--headH, 160px) + 8px); }
+.searchinfo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 0.9rem; }
+.searchinfo b { color: var(--fg); }
+input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
 .brand { display: flex; align-items: center; gap: 12px; }
 h1 { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1; margin: 0; letter-spacing: -0.01em; flex: 1; }
 h1 span { color: var(--tomato); }
@@ -201,12 +209,13 @@ h1 { font-size: 1.8rem; }
       <button id="tab-list" role="tab" aria-selected="true">My List</button>
       <button id="tab-shop" role="tab" aria-selected="false">In the Store <span class="count" id="shopCount">0</span></button>
     </div>
+    <nav class="jump" id="jump" aria-label="Jump to a section" hidden></nav>
   </header>
 
   <section id="view-list">
     <form class="add" id="addForm" autocomplete="off">
       <div class="addrow">
-        <input id="addInput" placeholder="Add an item" aria-label="New item">
+        <input id="addInput" type="search" enterkeyhint="done" placeholder="Find or add an item" aria-label="Find or add an item">
         <button class="plus" type="submit" aria-label="Add item">+</button>
       </div>
       <div class="addrow">
@@ -214,6 +223,7 @@ h1 { font-size: 1.8rem; }
         <select id="addStore" aria-label="Where to buy the new item"></select>
       </div>
     </form>
+    <div class="searchinfo" id="searchInfo" role="status" hidden></div>
     <div class="tools">
       <p class="hint" id="listHint"></p>
       <button class="pill" id="editBtn">Edit items</button>
@@ -357,6 +367,7 @@ let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
 const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
+let query = "";        // what's typed in the Find or add box
 let renaming = null;   // id of the section being renamed in Setup
 let trips = [], serverVersion = 0, spendYear = null, receiptMode = "finish";   // trips: {id, date "YYYY-MM-DD", store, amount, items}
 try { pass = localStorage.getItem("basket-pass") || ""; } catch (e) {}
@@ -497,7 +508,7 @@ function groups(list, mode) {
   return aisleOrder().map(a => {
     const its = list.filter(i => aisleOf(i.aisle).id === a.id);
     if (!its.length) return "";
-    return `<div class="group" style="--c:${a.c}"><h2>${esc(a.label)}</h2><ul>${its.map(i => rowHTML(i, mode)).join("")}</ul></div>`;
+    return `<div class="group" id="${mode === "shop" ? "shop" : "list"}-grp-${a.id}" style="--c:${a.c}"><h2>${esc(a.label)}</h2><ul>${its.map(i => rowHTML(i, mode)).join("")}</ul></div>`;
   }).join("");
 }
 function keepValue(sel, html) { const v = sel.value; sel.innerHTML = html; if ([...sel.options].some(o => o.value === v)) sel.value = v; }
@@ -521,8 +532,22 @@ function render() {
   $("clearBox").innerHTML = editing || !fullTrip.length ? "" : clearing
     ? `<button class="pill yes" id="clearYes">Yes, uncheck all ${fullTrip.length}</button><button class="pill" id="clearNo">Cancel</button>`
     : `<button class="pill" id="clearAll">Uncheck all (${fullTrip.length})</button>`;
-  $("listGroups").innerHTML = sorted.length ? groups(sorted, editing ? "edit" : "list")
-    : `<div class="empty"><strong>Your list is empty</strong>Add the things you usually buy. They stay here for next time.</div>`;
+  // Typing in the add box narrows the list to matching items
+  const q = query.trim().toLowerCase();
+  const shownList = q ? sorted.filter(i => i.name.toLowerCase().includes(q)) : sorted;
+  const exact = q && items.some(i => i.name.trim().toLowerCase() === q);
+  $("searchInfo").hidden = !q;
+  $("searchInfo").innerHTML = !q ? "" :
+    (shownList.length ? `<span><b>${shownList.length}</b> match${shownList.length === 1 ? "" : "es"}. Tap one to tick it.</span>` : `<span>Nothing called <b>${esc(query.trim())}</b> yet.</span>`) +
+    (exact ? "" : `<button class="pill yes" id="addFromSearch">+ Add “${esc(query.trim())}”</button>`);
+  $("listGroups").innerHTML = shownList.length ? groups(shownList, editing ? "edit" : "list")
+    : q ? "" : `<div class="empty"><strong>Your list is empty</strong>Add the things you usually buy. They stay here for next time.</div>`;
+
+  // Section shortcut chips for whichever list is showing
+  const chipItems = view === "list" ? shownList : view === "shop" ? trip : [];
+  const chipSecs = aisleOrder().filter(a => chipItems.some(i => aisleOf(i.aisle).id === a.id));
+  $("jump").hidden = chipSecs.length < 2;
+  $("jump").innerHTML = chipSecs.map(a => `<button class="jumpchip" style="--c:${a.c}" data-jump="${a.id}">${esc(a.label)}</button>`).join("");
 
   // In the Store
   $("filters").hidden = buckets.length < 2;
@@ -570,6 +595,8 @@ function render() {
   $("tab-list").setAttribute("aria-selected", view === "list");
   $("tab-shop").setAttribute("aria-selected", view === "shop");
   $("setupBtn").classList.toggle("on", view === "setup");
+  if (view !== "list" && view !== "shop") $("jump").hidden = true;
+  document.documentElement.style.setProperty("--headH", document.querySelector("header").offsetHeight + "px");   // so a jumped-to section lands below the sticky header
 
   const dock = $("dock");
   if (view === "shop" && trip.length) {
@@ -589,10 +616,22 @@ $("spendDone").onclick = () => go("list");
 $("setupDone").onclick = () => go("list");
 $("editBtn").onclick = () => { editing = !editing; clearing = false; render(); };
 
+function clearSearch() { query = ""; $("addInput").value = ""; render(); }
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
   addItem($("addInput").value, $("addAisle").value, $("addStore").value);
-  $("addInput").value = ""; $("addInput").focus();
+  clearSearch(); $("addInput").focus();
+});
+$("addInput").addEventListener("input", () => { query = $("addInput").value; render(); });
+$("searchInfo").addEventListener("click", e => {
+  if (e.target.id !== "addFromSearch") return;
+  addItem(query, $("addAisle").value, $("addStore").value);
+  clearSearch(); $("addInput").focus();
+});
+$("jump").addEventListener("click", e => {
+  const b = e.target.closest("[data-jump]"); if (!b) return;
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  $((view === "shop" ? "shop" : "list") + "-grp-" + b.dataset.jump)?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
 });
 $("clearBox").addEventListener("click", e => {
   if (e.target.id === "clearAll") clearing = true;
@@ -617,7 +656,10 @@ $("filters").onclick = e => { const b = e.target.closest("button"); if (b) { sto
 
 function toggle(row) {
   const it = items.find(i => i.id === row.dataset.id); if (!it) return;
-  if (view === "list") write(it, it.need ? { need: false, got: false } : { need: true });
+  if (view === "list") {
+    write(it, it.need ? { need: false, got: false } : { need: true });
+    if (query) { toast(`${it.need ? "Ticked" : "Unticked"} ${it.name} (${aisleOf(it.aisle).label}).`); clearSearch(); $("addInput").focus(); }
+  }
   else {
     write(it, { got: !it.got });
     const trip = items.filter(i => i.need && (storeFilter === "all" || (i.store || "") === storeFilter));
