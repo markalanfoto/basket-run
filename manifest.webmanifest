@@ -1,6 +1,6 @@
 {
-  "name": "Basket Run",
-  "short_name": "Basket Run",
+  "name": "Grocery Run",
+  "short_name": "Grocery Run",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
