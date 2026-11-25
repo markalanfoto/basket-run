@@ -37,6 +37,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .jump { display: flex; flex-wrap: wrap; gap: 6px; }
 .jumpchip { flex: none; display: flex; align-items: center; gap: 5px; font: 700 0.78rem var(--body); padding: 4px 10px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.jumpchip[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--bg); }
+.jumpchip[aria-pressed="true"]::before { background: var(--bg); }
+.jumpchip .n { font-weight: 600; opacity: 0.7; font-variant-numeric: tabular-nums; }
 .jumpchip::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
 .group { scroll-margin-top: calc(var(--headH, 160px) + 8px); }
 /* On a computer, use more of the window */
@@ -378,8 +381,9 @@ let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
 const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
-const BUILD = "2026-11-25d";   // change on every update so open phones notice it
+const BUILD = "2026-11-25e";   // change on every update so open phones notice it
 let query = "";        // what's typed in the Find or add box
+let listStore = null;  // with By store: the one store being shown ("" = Anywhere), or null for all
 let sortMode = "order"; // My List grouping: "order" (Setup order), "az" (sections A–Z) or "store"; remembered per phone
 try { sortMode = localStorage.getItem("basket-sort") || "order"; } catch (e) {}
 let renaming = null;   // id of the section being renamed in Setup
@@ -562,14 +566,22 @@ function render() {
   $("searchInfo").innerHTML = !q ? "" :
     (shownList.length ? `<span><b>${shownList.length}</b> match${shownList.length === 1 ? "" : "es"}. Tap one to tick it.</span>` : `<span>Nothing called <b>${esc(query.trim())}</b> yet.</span>`) +
     (exact ? "" : `<button class="pill yes" id="addFromSearch">+ Add “${esc(query.trim())}”</button>`);
-  $("listGroups").innerHTML = shownList.length ? groups(shownList, editing ? "edit" : "list")
+  // Sorted by store: a tapped store chip shows only that store (searching always looks through everything)
+  const storeOn = view === "list" && sortMode === "store" && !q;
+  if (listStore !== null && !sorted.some(i => (i.store || "") === listStore)) listStore = null;
+  const listShown = storeOn && listStore !== null ? shownList.filter(i => (i.store || "") === listStore) : shownList;
+  $("listGroups").innerHTML = shownList.length ? groups(listShown, editing ? "edit" : "list")
     : q ? "" : `<div class="empty"><strong>Your list is empty</strong>Add the things you usually buy. They stay here for next time.</div>`;
 
   // Section shortcut chips for whichever list is showing
   const chipItems = view === "list" ? shownList : view === "shop" ? trip : [];
   const chipGroups = groupDefs(chipItems, view === "shop" ? "shop" : "list");
   $("jump").hidden = chipGroups.length < 2;
-  $("jump").innerHTML = chipGroups.map(g => `<button class="jumpchip" style="--c:${g.c}" data-jump="${g.key}">${esc(g.label)}</button>`).join("");
+  $("jump").innerHTML = storeOn
+    ? `<button class="jumpchip" style="--c:var(--fg)" data-store-all aria-pressed="${listStore === null}">All stores</button>` +
+      chipGroups.map(g => { const name = g.label === "Anywhere" ? "" : g.label;
+        return `<button class="jumpchip" style="--c:${g.c}" data-store="${esc(name)}" aria-pressed="${listStore === name}">${esc(g.label)} <span class="n">${g.items.length}</span></button>`; }).join("")
+    : chipGroups.map(g => `<button class="jumpchip" style="--c:${g.c}" data-jump="${g.key}">${esc(g.label)}</button>`).join("");
   $("sortSel").value = sortMode;
 
   // In the Store
@@ -638,7 +650,7 @@ $("spendBtn").onclick = () => go(view === "spend" ? "list" : "spend");
 $("spendDone").onclick = () => go("list");
 $("setupDone").onclick = () => go("list");
 $("sortSel").onchange = () => {
-  sortMode = $("sortSel").value;
+  sortMode = $("sortSel").value; listStore = null;
   try { localStorage.setItem("basket-sort", sortMode); } catch (e) {}
   render(); scrollTo(0, 0);
 };
@@ -657,6 +669,11 @@ $("searchInfo").addEventListener("click", e => {
   clearSearch(); $("addInput").focus();
 });
 $("jump").addEventListener("click", e => {
+  const st = e.target.closest("[data-store],[data-store-all]");
+  if (st) {
+    listStore = "storeAll" in st.dataset || listStore === st.dataset.store ? null : st.dataset.store;   // tap the chosen store again to show all
+    render(); scrollTo(0, 0); return;
+  }
   const b = e.target.closest("[data-jump]"); if (!b) return;
   const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
   $((view === "shop" ? "shop" : "list") + "-grp-" + b.dataset.jump)?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
