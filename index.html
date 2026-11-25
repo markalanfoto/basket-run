@@ -224,7 +224,7 @@ h1 { font-size: 1.8rem; }
   </section>
 
   <section id="view-shop" hidden>
-    <div class="progress"><div class="top"><span>In the cart</span><b id="progNum">0 / 0</b></div><div class="bar"><i id="progBar"></i></div></div>
+    <div class="progress"><div class="top"><span>In the cart</span><b id="progNum">0 / 0</b></div><div class="bar"><i id="progBar"></i></div><button class="pill" id="checkAll" style="justify-self:end">Check all</button></div>
     <div class="filters" id="filters" hidden></div>
     <div id="shopGroups"></div>
   </section>
@@ -388,7 +388,14 @@ function loadLocal() { try { items = JSON.parse(localStorage.getItem("basket-ite
 async function call(ops) {
   if (!API.startsWith("https://")) { setSync("Not connected yet"); throw new Error("no api"); }
   const res = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ key: pass, ops }) });
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); } catch (e) { throw new Error(/lock/i.test(text) ? "busy" : "bad"); }   // Google sends an HTML page when the script fails
+}
+// Many taps on the same item become one save of its latest state.
+function compact(ops) {
+  const last = {};
+  ops.forEach((o, i) => { if (o.op === "upsert") last[o.item.id] = i; });
+  return ops.filter((o, i) => o.op !== "upsert" || last[o.item.id] === i);
 }
 function apply(data) {
   if (data.error === "passcode") { askPass("That passcode didn't work. Try again."); return; }
@@ -402,16 +409,30 @@ function apply(data) {
   }
   setSync("Synced");
 }
-function send(op) { queue.push(op); saveLocal(); clearTimeout(send.t); send.t = setTimeout(flush, 300); }
+let failures = 0;   // saves that failed in a row; each one waits longer before trying again
+function send(op) {
+  queue.push(op); saveLocal();
+  if (!failures) { clearTimeout(send.t); send.t = setTimeout(flush, 300); }
+}
 async function flush() {
   if (inflight || !queue.length || !pass) return;
   inflight = true;
-  const ops = queue; queue = [];
+  const ops = compact(queue); queue = [];
   setSync("Saving…");
-  try { apply(await call(ops)); }
-  catch (e) { queue = ops.concat(queue); setSync("Offline, will retry"); setTimeout(flush, 5000); }
+  try {
+    const data = await call(ops);
+    if (data.error === "busy") throw new Error("busy");
+    failures = 0;
+    apply(data);
+  } catch (e) {
+    queue = compact(ops.concat(queue));
+    failures++;
+    setSync(e.message === "busy" ? "Busy, saving soon" : "Offline, will retry");
+    clearTimeout(flush.t);
+    flush.t = setTimeout(flush, Math.min(30000, 2000 * 2 ** Math.min(failures, 4)) + Math.random() * 2000);
+  }
   inflight = false;
-  if (queue.length) flush();
+  if (queue.length && !failures) flush();
 }
 async function refresh() {
   if (!pass || inflight || queue.length || document.hidden) return;
@@ -511,6 +532,8 @@ function render() {
     : `<div class="empty"><strong>Nothing picked yet</strong>Go to My List and tick what you need.</div>`;
   $("progNum").textContent = `${got} / ${trip.length}`;
   $("progBar").style.width = trip.length ? (got / trip.length * 100) + "%" : "0";
+  $("checkAll").hidden = !trip.length;
+  $("checkAll").textContent = trip.length && got === trip.length ? "Uncheck all" : "Check all";
 
   // Setup
   const order = aisleOrder();
@@ -582,6 +605,14 @@ $("clearBox").addEventListener("click", e => {
   }
   render();
 });
+$("checkAll").onclick = () => {
+  const trip = items.filter(i => i.need && (storeFilter === "all" || (i.store || "") === storeFilter));
+  const checking = !trip.every(i => i.got);
+  const was = trip.filter(i => i.got !== checking).map(i => [i, i.got]);
+  was.forEach(([i]) => write(i, { got: checking }));
+  if (checking) confetti();
+  toast(checking ? `Checked off ${was.length} items.` : `Unchecked ${was.length} items.`, () => was.forEach(([i, g]) => write(i, { got: g })));
+};
 $("filters").onclick = e => { const b = e.target.closest("button"); if (b) { storeFilter = b.dataset.f; confirming = false; render(); } };
 
 function toggle(row) {
