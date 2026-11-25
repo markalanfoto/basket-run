@@ -108,6 +108,11 @@ ul, ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .order li .dot { width: 14px; height: 14px; border-radius: 4px; background: var(--c); flex: none; }
 .order li .lbl, .stores li .lbl { flex: 1; min-width: 0; font-weight: 700; }
 .order li .num { font: 800 0.9rem var(--display); color: var(--muted); width: 1.4em; text-align: right; font-variant-numeric: tabular-nums; }
+.namebtn { text-align: left; border: 0; background: none; color: var(--fg); font: 700 1rem var(--body); padding: 6px 0; cursor: pointer; }
+.namebtn span { color: var(--muted); font-weight: 400; }
+.order li.renaming { flex-wrap: wrap; }
+.renameIn { flex: 1 1 0; min-width: 0; font: 700 1rem var(--body); padding: 8px 10px; border-radius: 10px; border: 2px solid var(--berry); background: var(--card); color: var(--fg); }
+.rename-actions { flex: 1 1 100%; display: flex; gap: 8px; justify-content: flex-end; }
 .arrow { width: 40px; height: 40px; border: 2px solid var(--line); background: var(--card); color: var(--fg); border-radius: 12px; font-size: 1.1rem; cursor: pointer; }
 .arrow:disabled { opacity: .3; cursor: default; }
 .stores .tag { margin-right: auto; }
@@ -231,9 +236,15 @@ h1 { font-size: 1.8rem; }
       <div class="themes" id="themeGrid"></div>
     </div>
     <div class="card">
-      <h2>Section order</h2>
-      <p class="hint">Put the sections in the order you walk through the store. Both lists follow this order.</p>
+      <h2>Sections</h2>
+      <p class="hint">Use the arrows to match the way you walk through the store. Tap a name to rename or remove it.</p>
       <ol class="order" id="orderList"></ol>
+      <form class="add" id="sectionForm" autocomplete="off">
+        <div class="addrow">
+          <input id="sectionInput" placeholder="Add a section, like Frozen" aria-label="New section name">
+          <button class="plus" type="submit" aria-label="Add section">+</button>
+        </div>
+      </form>
     </div>
     <div class="card">
       <h2>Where to buy</h2>
@@ -326,10 +337,18 @@ function applyTheme(key) {
 }
 const currentTheme = () => settings?.theme || "auto";
 const TAG_COLORS = ["var(--tomato)", "var(--berry)", "var(--plum)", "var(--sky)", "var(--lime)", "var(--mango)"];
-const aisleOf = id => AISLES.find(a => a.id === id) || AISLES[AISLES.length - 1];
+// Sections live in settings.sections once edited; the built-in AISLES are the starting set and keep their guess words.
+const EXTRA_COLORS = ["#e0457b", "#14a3a3", "#7a9a2a", "#c2410c", "#6d5bd0", "#0e7490", "#b8860b", "#d6336c"];
+function sections() {
+  const s = settings?.sections;
+  return Array.isArray(s) && s.length ? s : AISLES.map(({ id, label, c }) => ({ id, label, c }));
+}
+const aisleOf = id => { const all = sections(); return all.find(a => a.id === id) || all.find(a => a.id === "other") || { id: "other", label: "Other", c: "var(--plum)" }; };
 function guessAisle(name) {
-  const n = name.toLowerCase();
-  for (const a of AISLES) if (a.words && a.words.split(" ").some(w => n.includes(w))) return a.id;
+  const n = name.toLowerCase(), all = sections();
+  const custom = all.find(a => !AISLES.some(b => b.id === a.id) && n.includes(a.label.toLowerCase()));
+  if (custom) return custom.id;
+  for (const a of AISLES) if (a.words && all.some(s => s.id === a.id) && a.words.split(" ").some(w => n.includes(w))) return a.id;
   return "other";
 }
 
@@ -338,6 +357,7 @@ let settings = null;     // {order: [section ids], stores: [names]}
 let view = "list", editing = false, confirming = false, clearing = false, storeFilter = "all";
 const API = "https://script.google.com/macros/s/AKfycbwxl3WmQAgwM7URNhNgngG4Ko1h6bjQ2L2ruBq-YcAXoTcwnX2QZtcFvm3GfRaspmN3/exec";   // Google Apps Script web app link
 let queue = [], inflight = false, pass = "";
+let renaming = null;   // id of the section being renamed in Setup
 let trips = [], serverVersion = 0, spendYear = null, receiptMode = "finish";   // trips: {id, date "YYYY-MM-DD", store, amount, items}
 try { pass = localStorage.getItem("basket-pass") || ""; } catch (e) {}
 const $ = id => document.getElementById(id);
@@ -345,8 +365,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
 
 function aisleOrder() {
-  const def = [...AISLES].sort((a, b) => (a.id === "other") - (b.id === "other") || a.label.localeCompare(b.label)).map(a => a.id);
-  const saved = (settings?.order || []).filter(id => AISLES.some(a => a.id === id));
+  const all = sections();
+  const def = [...all].sort((a, b) => (a.id === "other") - (b.id === "other") || a.label.localeCompare(b.label)).map(a => a.id);
+  const saved = (settings?.order || []).filter(id => all.some(a => a.id === id));
   return [...saved, ...def.filter(id => !saved.includes(id))].map(aisleOf);
 }
 function storeList() {
@@ -361,7 +382,7 @@ const aisleOptions = cur => aisleOrder().map(a => `<option value="${a.id}"${a.id
 /* ---------- storage: Google Sheet through Apps Script ---------- */
 const toServer = i => ({ id: i.id, name: i.name, section: aisleOf(i.aisle).label, store: i.store || "", need: !!i.need, got: !!i.got });
 const fromServer = r => ({ id: r.id, name: r.name, store: r.store || "", need: !!r.need, got: !!r.got,
-  aisle: (AISLES.find(a => a.label.toLowerCase() === String(r.section).trim().toLowerCase()) || aisleOf("other")).id });
+  aisle: (sections().find(a => a.label.toLowerCase() === String(r.section).trim().toLowerCase()) || aisleOf("other")).id });
 function saveLocal() { try { localStorage.setItem("basket-items", JSON.stringify(items)); localStorage.setItem("basket-settings", JSON.stringify(settings)); localStorage.setItem("basket-trips", JSON.stringify(trips)); } catch (e) {} }
 function loadLocal() { try { items = JSON.parse(localStorage.getItem("basket-items") || "[]"); settings = JSON.parse(localStorage.getItem("basket-settings") || "null"); trips = JSON.parse(localStorage.getItem("basket-trips") || "[]"); } catch (e) {} }
 async function call(ops) {
@@ -374,8 +395,8 @@ function apply(data) {
   if (data.error) { setSync("Sheet problem"); return; }
   serverVersion = data.version || 1;
   if (!queue.length) {
-    items = (data.items || []).map(fromServer);
     if (data.settings) settings = data.settings;
+    items = (data.items || []).map(fromServer);
     if (Array.isArray(data.trips)) trips = data.trips;
     saveLocal(); render();
   }
@@ -408,7 +429,7 @@ $("gateForm").addEventListener("submit", e => {
 const putItem = item => send({ op: "upsert", item: toServer(item) });
 function write(item, patch) { Object.assign(item, patch); render(); putItem(item); }
 function saveSettings(patch) {
-  settings = Object.assign({ order: aisleOrder().map(a => a.id), stores: storeList(), theme: currentTheme() }, patch);
+  settings = Object.assign({ order: aisleOrder().map(a => a.id), stores: storeList(), theme: currentTheme(), sections: sections() }, patch);
   render(); send({ op: "settings", settings });
 }
 function addItem(name, aisle, store) {
@@ -493,7 +514,12 @@ function render() {
 
   // Setup
   const order = aisleOrder();
-  $("orderList").innerHTML = order.map((a, n) => `<li style="--c:${a.c}"><span class="num">${n + 1}</span><span class="dot"></span><span class="lbl">${esc(a.label)}</span>
+  if (!(renaming && $("orderList").querySelector(".renameIn")))   // don't wipe a rename in progress
+  $("orderList").innerHTML = order.map((a, n) => a.id === renaming
+    ? `<li class="renaming" style="--c:${a.c}"><span class="dot"></span><input class="renameIn" value="${esc(a.label)}" aria-label="Section name">
+      <button class="pill yes" data-save="${a.id}">Save</button>
+      <div class="rename-actions"><button class="pill" data-cancel>Cancel</button>${a.id === "other" ? "" : `<button class="pill" data-remove="${a.id}">Remove section</button>`}</div></li>`
+    : `<li style="--c:${a.c}"><span class="num">${n + 1}</span><span class="dot"></span><button class="lbl namebtn" data-rename="${a.id}">${esc(a.label)} <span aria-hidden="true">✎</span></button>
     <button class="arrow" data-move="${a.id}" data-dir="-1" aria-label="Move ${esc(a.label)} up"${n === 0 ? " disabled" : ""}>↑</button>
     <button class="arrow" data-move="${a.id}" data-dir="1" aria-label="Move ${esc(a.label)} down"${n === order.length - 1 ? " disabled" : ""}>↓</button></li>`).join("");
   $("storeMgr").innerHTML = storeList().map(s => {
@@ -586,13 +612,58 @@ document.addEventListener("change", e => {
 $("themeGrid").addEventListener("click", e => {
   const b = e.target.closest("[data-theme-key]"); if (b) saveSettings({ theme: b.dataset.themeKey });
 });
+function saveRename(id) {
+  const input = $("orderList").querySelector(".renameIn");
+  const label = (input?.value || "").trim();
+  if (!label) { toast("Type a name for the section."); return; }
+  if (sections().some(s => s.id !== id && s.label.toLowerCase() === label.toLowerCase())) { toast(`There's already a ${label} section.`); return; }
+  renaming = null;
+  saveSettings({ sections: sections().map(s => s.id === id ? { ...s, label } : s) });
+  items.filter(i => aisleOf(i.aisle).id === id).forEach(i => write(i, {}));   // re-save so the Sheet shows the new name
+  toast(`Renamed to ${label}.`);
+}
+$("orderList").addEventListener("keydown", e => {
+  if (e.target.classList.contains("renameIn") && e.key === "Enter") { e.preventDefault(); saveRename(renaming); }
+  if (e.target.classList.contains("renameIn") && e.key === "Escape") { renaming = null; render(); }
+});
 $("orderList").addEventListener("click", e => {
+  const t = e.target.closest("[data-rename],[data-save],[data-cancel],[data-remove]");
+  if (t?.dataset.rename) { renaming = t.dataset.rename; render(); const inp = $("orderList").querySelector(".renameIn"); inp?.focus(); inp?.select(); return; }
+  if (t?.dataset.save) { saveRename(t.dataset.save); return; }
+  if (t && "cancel" in t.dataset) { renaming = null; render(); return; }
+  if (t?.dataset.remove) {
+    const id = t.dataset.remove, sec = aisleOf(id);
+    const beforeSections = sections(), beforeOrder = aisleOrder().map(a => a.id);
+    const moved = items.filter(i => i.aisle === id);
+    renaming = null;
+    saveSettings({ sections: beforeSections.filter(s => s.id !== id), order: beforeOrder.filter(x => x !== id) });
+    moved.forEach(i => write(i, { aisle: "other" }));
+    toast(moved.length ? `Removed ${sec.label}. ${moved.length} item${moved.length === 1 ? "" : "s"} moved to Other.` : `Removed ${sec.label}.`, () => {
+      saveSettings({ sections: beforeSections, order: beforeOrder });
+      moved.forEach(i => write(i, { aisle: id }));
+    });
+    return;
+  }
   const b = e.target.closest("[data-move]"); if (!b) return;
   const ids = aisleOrder().map(a => a.id), i = ids.indexOf(b.dataset.move), j = i + Number(b.dataset.dir);
   if (j < 0 || j >= ids.length) return;
   [ids[i], ids[j]] = [ids[j], ids[i]];
   saveSettings({ order: ids });
   requestAnimationFrame(() => $("orderList").querySelector(`[data-move="${ids[j]}"][data-dir="${b.dataset.dir}"]:not(:disabled)`)?.focus());
+});
+$("sectionForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const label = $("sectionInput").value.trim(); if (!label) return;
+  const all = sections();
+  if (all.some(s => s.label.toLowerCase() === label.toLowerCase())) { toast(`There's already a ${label} section.`); return; }
+  $("sectionInput").value = "";
+  const used = all.map(s => s.c);
+  const c = EXTRA_COLORS.find(x => !used.includes(x)) || EXTRA_COLORS[all.length % EXTRA_COLORS.length];
+  const id = "s" + Date.now().toString(36);
+  const order = aisleOrder().map(a => a.id), at = order.indexOf("other");
+  order.splice(at < 0 ? order.length : at, 0, id);
+  saveSettings({ sections: [...all, { id, label, c }], order });
+  toast(`Added ${label}. Pick it in Edit items to move things there.`);
 });
 $("storeForm").addEventListener("submit", e => {
   e.preventDefault();
